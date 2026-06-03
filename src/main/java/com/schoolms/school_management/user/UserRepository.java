@@ -8,8 +8,9 @@ import java.util.Optional;
  * UserRepository
  *
  * Basically it is there to not write SQL manually, so I just use methods like
- * findAll() etc
- * The whole point of this is to communicate to the Database properly
+ * findAll(), save() etc
+ * The whole point of this is to communicate to the Database properly and more
+ * easily
  * 
  */
 public interface UserRepository extends JpaRepository<User, Long> {
