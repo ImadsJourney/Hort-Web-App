@@ -1,8 +1,11 @@
 HELP.md
 target/
+*.log
+logs/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+
 
 ### STS ###
 .apt_generated
@@ -31,3 +34,9 @@ build/
 
 ### VS Code ###
 .vscode/
+
+.DS_Store
+Thumbs.db
+
+### .env (Secrets) ###
+.env

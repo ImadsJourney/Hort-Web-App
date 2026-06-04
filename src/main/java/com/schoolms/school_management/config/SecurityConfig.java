@@ -27,7 +27,7 @@ import com.nimbusds.jose.jwk.source.ImmutableSecret;
 @Configuration
 public class SecurityConfig {
 
-  @Value("${jwt.secret}")
+  @Value("${app.jwt.secret}")
   private String jwtSecret;
 
   // Hashing mittels dem von Spring gestellten PasswordEncoder
