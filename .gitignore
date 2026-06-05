@@ -40,3 +40,6 @@ Thumbs.db
 
 ### .env (Secrets) ###
 .env
+
+frontend/node_modules/
+frontend/dist/
