@@ -12,6 +12,15 @@ import {
 } from "./api";
 import type { AttendanceStatus, ChildResponse, HortGroupResponse } from "./types";
 
+function formatAttendanceStatus(status: AttendanceStatus) {
+  if (status === "PRESENT") return "Anwesend";
+  if (status === "LATE") return "Verspätet";
+  if (status === "ABSENT") return "Abwesend";
+  if (status === "NOT_RECORDED") return "Nicht erfasst";
+
+  return status;
+}
+
 function App() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -19,6 +28,7 @@ function App() {
   const [token, setToken] = useState<string | null>(null);
   const [groups, setGroups] = useState<HortGroupResponse[]>([]);
   const [children, setChildren] = useState<ChildResponse[]>([]);
+  const [childSearchTerm, setChildSearchTerm] = useState("");
 
   const [newGroupName, setNewGroupName] = useState("");
   const [newGroupGradeLevel, setNewGroupGradeLevel] = useState("");
@@ -45,7 +55,7 @@ function App() {
       setToken(response.token);
       setMessage(response.message);
     } catch {
-      setError("Login failed. Please check your username and password.");
+      setError("Login fehlgeschlagen. Bitte überprüfe dein Benutzernamen und Passwort");
     }
   }
 
@@ -59,7 +69,7 @@ function App() {
       setToken(response.token);
       setMessage(response.message);
     } catch {
-      setError("Registration failed. Username may already exist.");
+      setError("Registrierung fehlgeschlagen. Passwort muss mindestens 8 Zeichen haben.");
     }
   }
 
@@ -73,7 +83,7 @@ function App() {
       setGroups(loadedGroups);
       setChildren(loadedChildren);
     } catch {
-      setError("Could not load dashboard data.");
+      setError("Dashboard konnte nicht geladen werden.");
     }
   }
 
@@ -99,10 +109,10 @@ function App() {
       setNewGroupGradeLevel("");
       setNewGroupSupervisorName("");
 
-      setMessage("Group created successfully.");
+      setMessage("Gruppe wurde erfolgreich erstellt.");
       await loadData(token);
     } catch {
-      setError("Could not create group.");
+      setError("Gruppe konnte nicht erstellt werden.");
     }
   }
 
@@ -152,12 +162,12 @@ function App() {
       await updateAttendance(childId, attendanceStatus, token);
 
       setMessage(
-        "Updated attendance status of child " + childId + " to " + attendanceStatus
+        "Anwesenheitstatus von " + childId + " wurde geändert zu " + attendanceStatus
       );
 
       await loadData(token);
     } catch {
-      setError("Could not update attendance status of child " + childId);
+      setError("Anwesenheitsstatus von " + childId + " konnte nicht geändert werden.");
     }
   }
 
@@ -182,14 +192,14 @@ function App() {
 
       await updateNotes(childId, notesDraft, token);
 
-      setMessage("Updated notes of child " + childId);
+      setMessage("Notiz von " + childId + " wurden geändert.");
 
       setEditingChildId(null);
       setNotesDraft("");
 
       await loadData(token);
     } catch {
-      setError("Could not update notes of child " + childId);
+      setError("Notiz von " + childId + " konnten nicht geändert werden.");
     }
   }
 
@@ -199,6 +209,7 @@ function App() {
     setPassword("");
     setGroups([]);
     setChildren([]);
+    setChildSearchTerm("");
     setEditingChildId(null);
     setNotesDraft("");
     setMessage("");
@@ -211,20 +222,34 @@ function App() {
     }
   }, [token]);
 
+  const normalizedChildSearchTerm = childSearchTerm.trim().toLowerCase();
+
+  const filteredChildren = normalizedChildSearchTerm
+    ? children.filter((child) => {
+      const fullName = `${child.firstName} ${child.lastName}`.toLowerCase();
+      const groupName = child.hortGroupName.toLowerCase();
+
+      return (
+        fullName.includes(normalizedChildSearchTerm) ||
+        groupName.includes(normalizedChildSearchTerm)
+      );
+    })
+    : children;
+
   if (!token) {
     return (
       <main className="page">
         <section className="card">
           <h1>Hort-Manager</h1>
-          <p className="subtitle">Willkommmen zurück! :)</p>
+          <p className="subtitle">Willkommmen zurück! :))</p>
 
           <div className="form">
             <label>
-              Username
+              Benutzername
               <input
                 value={username}
                 onChange={(event) => setUsername(event.target.value)}
-                placeholder="teacher1"
+                placeholder="Lehrer"
               />
             </label>
 
@@ -234,17 +259,17 @@ function App() {
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                placeholder="password123"
+                placeholder="Min. 8 Zeichen"
               />
             </label>
 
             <div className="button-row">
               <button type="button" onClick={handleLogin}>
-                Login
+                Einloggen
               </button>
 
               <button type="button" className="secondary" onClick={handleRegister}>
-                Register
+                Registrierung
               </button>
             </div>
 
@@ -261,11 +286,11 @@ function App() {
       <section className="dashboard-header">
         <div>
           <h1>Hort Manager</h1>
-          <p className="subtitle">Logged in as {username}</p>
+          <p className="subtitle">Eingeloggt als {username}</p>
         </div>
 
         <button type="button" className="secondary" onClick={handleLogout}>
-          Logout
+          Ausloggen
         </button>
       </section>
 
@@ -273,70 +298,76 @@ function App() {
       {message && <p className="success">{message}</p>}
 
       <section className="grid">
-        <div className="card">
-          <h2>Groups</h2>
+        <div className="left-column">
+          <div className="card">
+            <h2>Gruppen</h2>
 
-          <div className="form">
-            <input
-              value={newGroupName}
-              onChange={(event) => setNewGroupName(event.target.value)}
-              placeholder="Group name"
-            />
+            <div className="form">
+              <input
+                value={newGroupName}
+                onChange={(event) => setNewGroupName(event.target.value)}
+                placeholder="Gruppenname"
+              />
 
-            <input
-              value={newGroupGradeLevel}
-              onChange={(event) => setNewGroupGradeLevel(event.target.value)}
-              placeholder="Grade level"
-            />
+              <input
+                value={newGroupGradeLevel}
+                onChange={(event) => setNewGroupGradeLevel(event.target.value)}
+                placeholder="Klassenstufe"
+              />
 
-            <input
-              value={newGroupSupervisorName}
-              onChange={(event) => setNewGroupSupervisorName(event.target.value)}
-              placeholder="Supervisor name"
-            />
+              <input
+                value={newGroupSupervisorName}
+                onChange={(event) => setNewGroupSupervisorName(event.target.value)}
+                placeholder="Lehrer"
+              />
 
-            <button type="button" onClick={handleCreateGroup}>
-              Create group
-            </button>
+              <button type="button" onClick={handleCreateGroup}>
+                Gruppe erstellen
+              </button>
+            </div>
+
+            {groups.length === 0 ? (
+              <p>Keine Gruppen gefunden.</p>
+            ) : (
+              <ul className="list">
+                {groups.map((group) => (
+                  <li key={group.id}>
+                    <strong>{group.name}</strong>
+                    <span>{group.gradeLevel}</span>
+                    <span>{group.supervisorName}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
-          {groups.length === 0 ? (
-            <p>No groups found.</p>
-          ) : (
-            <ul className="list">
-              {groups.map((group) => (
-                <li key={group.id}>
-                  <strong>{group.name}</strong>
-                  <span> - </span>
-                  <span>{group.gradeLevel} - </span>
-                  <span>{group.supervisorName}</span>
-                </li>
-              ))}
-            </ul>
-          )}
+          <div className="stats-card">
+            <span>Kinder insgesamt</span>
+            <strong>{children.length}</strong>
+          </div>
         </div>
 
         <div className="card">
-          <h2>Children</h2>
+          <h2>Kinder</h2>
 
           <div className="form">
             <input
               value={newChildFirstName}
               onChange={(event) => setNewChildFirstName(event.target.value)}
-              placeholder="First name"
+              placeholder="Vorname"
             />
 
             <input
               value={newChildLastName}
               onChange={(event) => setNewChildLastName(event.target.value)}
-              placeholder="Last name"
+              placeholder="Nachname"
             />
 
             <select
               value={newChildGroupId}
               onChange={(event) => setNewChildGroupId(event.target.value)}
             >
-              <option value="">Select group</option>
+              <option value="">Gruppe auswählen</option>
 
               {groups.map((group) => (
                 <option key={group.id} value={String(group.id)}>
@@ -348,27 +379,44 @@ function App() {
             <textarea
               value={newChildNotes}
               onChange={(event) => setNewChildNotes(event.target.value)}
-              placeholder="Notes"
+              placeholder="Notiz"
             />
 
             <button type="button" onClick={handleCreateChild}>
-              Create child
+              Kind hinzufügen
             </button>
           </div>
 
+          <div className="search-box">
+            <input
+              value={childSearchTerm}
+              onChange={(event) => setChildSearchTerm(event.target.value)}
+              placeholder="Kind suchen..."
+            />
+
+
+            {childSearchTerm && (
+              <span>
+                {filteredChildren.length} von {children.length} Kindern gefunden
+              </span>
+            )}
+          </div>
+
           {children.length === 0 ? (
-            <p>No children found.</p>
+            <p>Keine Kinder gefunden.</p>
+          ) : filteredChildren.length === 0 ? (
+            <p>Kein Kind passt zu deiner Suche.</p>
           ) : (
             <ul className="list">
-              {children.map((child) => (
+              {filteredChildren.map((child) => (
                 <li key={child.id}>
                   <div className="child-info">
                     <strong>
-                      {child.firstName} {child.lastName}
+                      {child.lastName}, {child.firstName}
                     </strong>
 
-                    <span> - Group: {child.hortGroupName}</span>
-                    <span> - Status: {child.attendanceStatus}</span>
+                    <span> ---- Gruppe: {child.hortGroupName}</span>
+                    <span> ---- Status: {formatAttendanceStatus(child.attendanceStatus)}</span>
                   </div>
 
                   {editingChildId === child.id ? (
@@ -376,29 +424,26 @@ function App() {
                       <textarea
                         value={notesDraft}
                         onChange={(event) => setNotesDraft(event.target.value)}
-                        placeholder="Notes"
+                        placeholder="Notiz"
                       />
 
-                      <button
-                        type="button"
-                        onClick={() => handleUpdateNotes(child.id)}
-                      >
-                        Save notes
+                      <button type="button" onClick={() => handleUpdateNotes(child.id)}>
+                        Notiz speichern
                       </button>
 
                       <button type="button" onClick={handleCancelEditingNotes}>
-                        Cancel
+                        Abbrechen
                       </button>
                     </div>
                   ) : (
                     <div className="notes-view">
-                      <span>Notes: {child.notes || "No notes"}</span>
+                      <span>Notiz: {child.notes || "Keine Notiz"}</span>
 
                       <button
                         type="button"
                         onClick={() => handleStartEditingNotes(child)}
                       >
-                        Edit notes
+                        Notiz bearbeiten
                       </button>
                     </div>
                   )}
@@ -431,6 +476,7 @@ function App() {
           )}
         </div>
       </section>
+
     </main>
   );
 }

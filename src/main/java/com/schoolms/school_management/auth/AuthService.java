@@ -43,7 +43,7 @@ public class AuthService {
         savedUser.getId(),
         savedUser.getUsername(),
         token,
-        "Registration successful");
+        "Erfolgreich registriert.");
 
   }
 
@@ -67,7 +67,7 @@ public class AuthService {
         user.getId(),
         user.getUsername(),
         token,
-        "Login successful");
+        "Erfolgreich eingeloggt.");
   }
 
 }
