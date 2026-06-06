@@ -7,8 +7,10 @@ import {
   getGroups,
   login,
   register,
+  updateAttendance,
+  updateNotes,
 } from "./api";
-import type { ChildResponse, HortGroupResponse } from "./types";
+import type { AttendanceStatus, ChildResponse, HortGroupResponse } from "./types";
 
 function App() {
   const [username, setUsername] = useState("");
@@ -26,6 +28,9 @@ function App() {
   const [newChildLastName, setNewChildLastName] = useState("");
   const [newChildNotes, setNewChildNotes] = useState("");
   const [newChildGroupId, setNewChildGroupId] = useState("");
+
+  const [editingChildId, setEditingChildId] = useState<number | null>(null);
+  const [notesDraft, setNotesDraft] = useState("");
 
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -85,14 +90,16 @@ function App() {
         {
           name: newGroupName,
           gradeLevel: newGroupGradeLevel,
-          supervisorName: newGroupSupervisorName
-        }, token
+          supervisorName: newGroupSupervisorName,
+        },
+        token
       );
 
       setNewGroupName("");
       setNewGroupGradeLevel("");
       setNewGroupSupervisorName("");
 
+      setMessage("Group created successfully.");
       await loadData(token);
     } catch {
       setError("Could not create group.");
@@ -113,8 +120,9 @@ function App() {
           firstName: newChildFirstName,
           lastName: newChildLastName,
           notes: newChildNotes,
-          hortGroupId: Number(newChildGroupId)
-        }, token
+          hortGroupId: Number(newChildGroupId),
+        },
+        token
       );
 
       setNewChildFirstName("");
@@ -122,12 +130,66 @@ function App() {
       setNewChildNotes("");
       setNewChildGroupId("");
 
-      setMessage("Child created succesfully.");
+      setMessage("Child created successfully.");
+      await loadData(token);
+    } catch {
+      setError("Could not create child.");
+    }
+  }
+
+  async function handleUpdateAttendance(
+    childId: number,
+    attendanceStatus: AttendanceStatus
+  ) {
+    if (!token) {
+      return;
+    }
+
+    try {
+      setError("");
+      setMessage("");
+
+      await updateAttendance(childId, attendanceStatus, token);
+
+      setMessage(
+        "Updated attendance status of child " + childId + " to " + attendanceStatus
+      );
 
       await loadData(token);
-
     } catch {
-      setError("Could not create child.")
+      setError("Could not update attendance status of child " + childId);
+    }
+  }
+
+  function handleStartEditingNotes(child: ChildResponse) {
+    setEditingChildId(child.id);
+    setNotesDraft(child.notes || "");
+  }
+
+  function handleCancelEditingNotes() {
+    setEditingChildId(null);
+    setNotesDraft("");
+  }
+
+  async function handleUpdateNotes(childId: number) {
+    if (!token) {
+      return;
+    }
+
+    try {
+      setError("");
+      setMessage("");
+
+      await updateNotes(childId, notesDraft, token);
+
+      setMessage("Updated notes of child " + childId);
+
+      setEditingChildId(null);
+      setNotesDraft("");
+
+      await loadData(token);
+    } catch {
+      setError("Could not update notes of child " + childId);
     }
   }
 
@@ -137,6 +199,8 @@ function App() {
     setPassword("");
     setGroups([]);
     setChildren([]);
+    setEditingChildId(null);
+    setNotesDraft("");
     setMessage("");
     setError("");
   }
@@ -175,8 +239,11 @@ function App() {
             </label>
 
             <div className="button-row">
-              <button onClick={handleLogin}>Login</button>
-              <button className="secondary" onClick={handleRegister}>
+              <button type="button" onClick={handleLogin}>
+                Login
+              </button>
+
+              <button type="button" className="secondary" onClick={handleRegister}>
                 Register
               </button>
             </div>
@@ -197,7 +264,7 @@ function App() {
           <p className="subtitle">Logged in as {username}</p>
         </div>
 
-        <button className="secondary" onClick={handleLogout}>
+        <button type="button" className="secondary" onClick={handleLogout}>
           Logout
         </button>
       </section>
@@ -209,7 +276,7 @@ function App() {
         <div className="card">
           <h2>Groups</h2>
 
-          <div>
+          <div className="form">
             <input
               value={newGroupName}
               onChange={(event) => setNewGroupName(event.target.value)}
@@ -228,24 +295,24 @@ function App() {
               placeholder="Supervisor name"
             />
 
-            <button onClick={handleCreateGroup}>Create group</button>
+            <button type="button" onClick={handleCreateGroup}>
+              Create group
+            </button>
           </div>
 
           {groups.length === 0 ? (
             <p>No groups found.</p>
           ) : (
-            <>
-              <ul className="list">
-                {groups.map((group) => (
-                  <li key={group.id}>
-                    <strong>{group.name}</strong>
-                    <span> - </span>
-                    <span>{group.gradeLevel} - </span>
-                    <span>{group.supervisorName}</span>
-                  </li>
-                ))}
-              </ul>
-            </>
+            <ul className="list">
+              {groups.map((group) => (
+                <li key={group.id}>
+                  <strong>{group.name}</strong>
+                  <span> - </span>
+                  <span>{group.gradeLevel} - </span>
+                  <span>{group.supervisorName}</span>
+                </li>
+              ))}
+            </ul>
           )}
         </div>
 
@@ -267,7 +334,7 @@ function App() {
 
             <select
               value={newChildGroupId}
-              onChange={(event => setNewChildGroupId(event.target.value))}
+              onChange={(event) => setNewChildGroupId(event.target.value)}
             >
               <option value="">Select group</option>
 
@@ -278,8 +345,15 @@ function App() {
               ))}
             </select>
 
-            <button onClick={handleCreateChild}>Create child</button>
+            <textarea
+              value={newChildNotes}
+              onChange={(event) => setNewChildNotes(event.target.value)}
+              placeholder="Notes"
+            />
 
+            <button type="button" onClick={handleCreateChild}>
+              Create child
+            </button>
           </div>
 
           {children.length === 0 ? (
@@ -288,19 +362,76 @@ function App() {
             <ul className="list">
               {children.map((child) => (
                 <li key={child.id}>
-                  <strong>
-                    {child.firstName} {child.lastName}
-                  </strong>
-                  <span>Group: {child.hortGroupName}</span>
-                  <span>Status: {child.attendanceStatus}</span>
-                  <span>Notes: {child.notes || "No notes"}</span>
+                  <div className="child-info">
+                    <strong>
+                      {child.firstName} {child.lastName}
+                    </strong>
+
+                    <span> - Group: {child.hortGroupName}</span>
+                    <span> - Status: {child.attendanceStatus}</span>
+                  </div>
+
+                  {editingChildId === child.id ? (
+                    <div className="notes-editor">
+                      <textarea
+                        value={notesDraft}
+                        onChange={(event) => setNotesDraft(event.target.value)}
+                        placeholder="Notes"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateNotes(child.id)}
+                      >
+                        Save notes
+                      </button>
+
+                      <button type="button" onClick={handleCancelEditingNotes}>
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="notes-view">
+                      <span>Notes: {child.notes || "No notes"}</span>
+
+                      <button
+                        type="button"
+                        onClick={() => handleStartEditingNotes(child)}
+                      >
+                        Edit notes
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="attendance-btns">
+                    <button
+                      type="button"
+                      onClick={() => handleUpdateAttendance(child.id, "PRESENT")}
+                    >
+                      Anwesend
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleUpdateAttendance(child.id, "LATE")}
+                    >
+                      Verspätet
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleUpdateAttendance(child.id, "ABSENT")}
+                    >
+                      Nicht Anwesend
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>
           )}
         </div>
       </section>
-    </main >
+    </main>
   );
 }
 

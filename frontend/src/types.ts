@@ -1,3 +1,10 @@
+/*
+ *
+ * Hier werden die einzelnen Typen definiert, um Übersicht bei den fetch Statements zu verschaffen
+ * und dadurch entsteht Modulasierung
+ * export -> weil diese in api.ts benutzt werden sollen
+ */
+
 export type AuthResponse = {
   userId: number;
   username: string;

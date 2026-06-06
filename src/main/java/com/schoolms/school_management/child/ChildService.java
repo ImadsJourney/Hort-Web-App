@@ -41,7 +41,7 @@ public class ChildService {
   }
 
   public List<ChildResponse> getAllChildren() {
-    return childRepository.findAll()
+    return childRepository.findAllByOrderByLastNameAscFirstNameAsc()
         .stream()
         .map(this::toChildResponse)
         .toList();

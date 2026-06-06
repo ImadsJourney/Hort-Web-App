@@ -6,5 +6,7 @@ import java.util.List;
 
 public interface ChildRepository extends JpaRepository<Child, Long> {
 
-  List<Child> findByHortGroupId(Long hortGroupId);
+  List<Child> findAllByOrderByLastNameAscFirstNameAsc();
+
+  List<Child> findByHortGroupId(Long groupId);
 }
