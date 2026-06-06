@@ -51,7 +51,7 @@ class AuthServiceTest {
 
     assertThat(response.userId()).isEqualTo(1L);
     assertThat(response.username()).isEqualTo("max");
-    assertThat(response.message()).isEqualTo("Registration successful");
+    assertThat(response.message()).isEqualTo("Erfolgreich registriert.");
     assertThat(response.token()).isEqualTo("fake-jwt-token");
 
     verify(userRepository).existsByUsername("max");
@@ -85,7 +85,7 @@ class AuthServiceTest {
 
     assertThat(response.userId()).isEqualTo(1L);
     assertThat(response.username()).isEqualTo("max");
-    assertThat(response.message()).isEqualTo("Login successful");
+    assertThat(response.message()).isEqualTo("Erfolgreich eingeloggt.");
 
     verify(userRepository).findByUsername("max");
     verify(passwordEncoder).matches("password123", "hashed-password");
