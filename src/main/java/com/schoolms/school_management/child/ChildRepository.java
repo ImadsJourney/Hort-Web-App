@@ -1,12 +1,20 @@
 package com.schoolms.school_management.child;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-
 import java.util.List;
+import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ChildRepository extends JpaRepository<Child, Long> {
 
-  List<Child> findAllByOrderByLastNameAscFirstNameAsc();
+  List<Child> findAllByHortGroupOwnerIdOrderByLastNameAscFirstNameAsc(
+      Long ownerId);
 
-  List<Child> findByHortGroupId(Long groupId);
+  List<Child> findByHortGroupIdAndHortGroupOwnerIdOrderByLastNameAscFirstNameAsc(
+      Long groupId,
+      Long ownerId);
+
+  Optional<Child> findByIdAndHortGroupOwnerId(
+      Long childId,
+      Long ownerId);
 }

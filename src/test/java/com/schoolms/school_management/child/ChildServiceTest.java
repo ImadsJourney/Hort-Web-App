@@ -20,11 +20,13 @@ import com.schoolms.school_management.child.dto.UpdateNotesRequest;
 import com.schoolms.school_management.hortgroup.HortGroup;
 import com.schoolms.school_management.hortgroup.HortGroupRepository;
 
-/**
- * ChildServiceTest
- */
 @ExtendWith(MockitoExtension.class)
-public class ChildServiceTest {
+class ChildServiceTest {
+
+  private static final Long userId = 10L;
+  private static final Long groupId = 1L;
+  private static final Long childId = 1L;
+
   @Mock
   private ChildRepository childRepository;
 
@@ -36,21 +38,23 @@ public class ChildServiceTest {
 
   private HortGroup createTestGroup() {
     HortGroup group = new HortGroup();
-    group.setId(1L);
+    group.setId(groupId);
     group.setName("Bärengruppe");
     group.setGradeLevel("1. Klasse");
     group.setSupervisorName("Frau Müller");
+
     return group;
   }
 
   private Child createTestChild(HortGroup group) {
     Child child = new Child();
-    child.setId(1L);
+    child.setId(childId);
     child.setFirstName("Emma");
     child.setLastName("Schmidt");
     child.setNotes("Wird um 15 Uhr abgeholt");
     child.setAttendanceStatus(AttendanceStatus.NOT_RECORDED);
     child.setHortGroup(group);
+
     return child;
   }
 
@@ -60,25 +64,32 @@ public class ChildServiceTest {
         "Emma",
         "Schmidt",
         "Wird um 15 Uhr abgeholt",
-        1L);
+        groupId);
 
     HortGroup group = createTestGroup();
     Child savedChild = createTestChild(group);
 
-    when(hortGroupRepository.findById(1L)).thenReturn(Optional.of(group));
-    when(childRepository.save(any(Child.class))).thenReturn(savedChild);
+    when(hortGroupRepository.findByIdAndOwnerId(groupId, userId))
+        .thenReturn(Optional.of(group));
 
-    ChildResponse response = childService.createChild(request);
+    when(childRepository.save(any(Child.class)))
+        .thenReturn(savedChild);
 
-    assertThat(response.id()).isEqualTo(1L);
+    ChildResponse response = childService.createChild(request, userId);
+
+    assertThat(response.id()).isEqualTo(childId);
     assertThat(response.firstName()).isEqualTo("Emma");
     assertThat(response.lastName()).isEqualTo("Schmidt");
-    assertThat(response.notes()).isEqualTo("Wird um 15 Uhr abgeholt");
-    assertThat(response.attendanceStatus()).isEqualTo(AttendanceStatus.NOT_RECORDED);
-    assertThat(response.hortGroupId()).isEqualTo(1L);
+    assertThat(response.notes())
+        .isEqualTo("Wird um 15 Uhr abgeholt");
+    assertThat(response.attendanceStatus())
+        .isEqualTo(AttendanceStatus.NOT_RECORDED);
+    assertThat(response.hortGroupId()).isEqualTo(groupId);
     assertThat(response.hortGroupName()).isEqualTo("Bärengruppe");
 
-    verify(hortGroupRepository).findById(1L);
+    verify(hortGroupRepository)
+        .findByIdAndOwnerId(groupId, userId);
+
     verify(childRepository).save(any(Child.class));
   }
 
@@ -89,15 +100,25 @@ public class ChildServiceTest {
 
     UpdateAttendanceRequest request = new UpdateAttendanceRequest(AttendanceStatus.PRESENT);
 
-    when(childRepository.findById(1L)).thenReturn(Optional.of(child));
-    when(childRepository.save(any(Child.class))).thenReturn(child);
+    when(childRepository.findByIdAndHortGroupOwnerId(
+        childId,
+        userId)).thenReturn(Optional.of(child));
 
-    ChildResponse response = childService.updateAttendance(1L, request);
+    when(childRepository.save(any(Child.class)))
+        .thenReturn(child);
 
-    assertThat(response.id()).isEqualTo(1L);
-    assertThat(response.attendanceStatus()).isEqualTo(AttendanceStatus.PRESENT);
+    ChildResponse response = childService.updateAttendance(
+        childId,
+        request,
+        userId);
 
-    verify(childRepository).findById(1L);
+    assertThat(response.id()).isEqualTo(childId);
+    assertThat(response.attendanceStatus())
+        .isEqualTo(AttendanceStatus.PRESENT);
+
+    verify(childRepository)
+        .findByIdAndHortGroupOwnerId(childId, userId);
+
     verify(childRepository).save(any(Child.class));
   }
 
@@ -108,15 +129,24 @@ public class ChildServiceTest {
 
     UpdateNotesRequest request = new UpdateNotesRequest("Neue Notiz");
 
-    when(childRepository.findById(1L)).thenReturn(Optional.of(child));
-    when(childRepository.save(any(Child.class))).thenReturn(child);
+    when(childRepository.findByIdAndHortGroupOwnerId(
+        childId,
+        userId)).thenReturn(Optional.of(child));
 
-    ChildResponse response = childService.updateNotes(1L, request);
+    when(childRepository.save(any(Child.class)))
+        .thenReturn(child);
 
-    assertThat(response.id()).isEqualTo(1L);
+    ChildResponse response = childService.updateNotes(
+        childId,
+        request,
+        userId);
+
+    assertThat(response.id()).isEqualTo(childId);
     assertThat(response.notes()).isEqualTo("Neue Notiz");
 
-    verify(childRepository).findById(1L);
+    verify(childRepository)
+        .findByIdAndHortGroupOwnerId(childId, userId);
+
     verify(childRepository).save(any(Child.class));
   }
 }

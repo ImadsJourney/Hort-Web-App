@@ -1,5 +1,7 @@
 package com.schoolms.school_management.hortgroup;
 
+import com.schoolms.school_management.user.User;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -21,6 +23,10 @@ public class HortGroup {
 
   private String supervisorName;
 
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "owner_id", nullable = false)
+  private User owner;
+
   public String getName() {
     return name;
   }
@@ -35,6 +41,14 @@ public class HortGroup {
 
   public String getSupervisorName() {
     return supervisorName;
+  }
+
+  public User getOwner() {
+    return owner;
+  }
+
+  public void setOwner(User owner) {
+    this.owner = owner;
   }
 
   public void setId(Long id) {
